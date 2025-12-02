@@ -13,27 +13,6 @@ const App = () => {
   const [products, setProducts] = useState(initialProducts);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [categories] = useState(["All", ...allCategories.map((c) => c.name)]);
-  const [stats, setStats] = useState({
-    totalValue: 0,
-    totalProducts: 0,
-    lowStockCount: 0,
-  });
-
-  // Calculate statistics
-  useEffect(() => {
-    const totalValue = products.reduce((sum, product) => {
-      return sum + product.price * product.quantity;
-    }, 0);
-
-    const lowStockCount = products.filter((p) => p.quantity < 5).length;
-
-    setStats({
-      totalValue,
-      totalProducts: products.length,
-      lowStockCount,
-    });
-  }, [products]);
 
   const addProduct = (newProduct) => {
     const productWithId = {
@@ -42,10 +21,6 @@ const App = () => {
       quantity: parseInt(newProduct.quantity),
       price: parseFloat(newProduct.price),
       rating: parseFloat(newProduct.rating),
-      color: newProduct.color ? newProduct.color.split(",") : ["Black"],
-      tags: newProduct.tags
-        ? newProduct.tags.split(",").map((t) => t.trim())
-        : ["new"],
     };
     setProducts([...products, productWithId]);
   };
@@ -63,9 +38,9 @@ const App = () => {
   };
 
   const deleteProduct = (productId) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
+    if (window.confirm("Delete this product?")) {
       setProducts(products.filter((product) => product.id !== productId));
-      if (selectedProduct && selectedProduct.id === productId) {
+      if (selectedProduct?.id === productId) {
         setSelectedProduct(null);
       }
     }
@@ -76,22 +51,22 @@ const App = () => {
       ? products
       : products.filter((product) => product.category === selectedCategory);
 
+  const total = products.reduce((sum, product) => {
+    return sum + product.price * product.quantity;
+  }, 0);
+
   return (
     <div className="app">
-      <Header
-        total={stats.totalValue}
-        productCount={stats.totalProducts}
-        lowStockCount={stats.lowStockCount}
-      />
+      <Header total={total} productCount={products.length} />
 
-      <div className="main-container">
+      <div className="container">
         {selectedProduct ? (
-          <div className="product-detail-container">
+          <div>
             <button
-              className="back-button"
+              className="back-btn"
               onClick={() => setSelectedProduct(null)}
             >
-              ← Back to Products
+              ← Back
             </button>
             <ProductDetail
               product={selectedProduct}
@@ -100,70 +75,46 @@ const App = () => {
             />
           </div>
         ) : (
-          <>
+          <div className="main-content">
             <div className="sidebar">
               <ProductForm addProduct={addProduct} />
 
-              <div className="stats-card">
-                <h3>📊 Inventory Stats</h3>
-                <div className="stat-item">
+              <div className="stats">
+                <h3>Inventory Summary</h3>
+                <div className="stat">
                   <span>Total Products:</span>
-                  <strong>{stats.totalProducts}</strong>
+                  <strong>{products.length}</strong>
                 </div>
-                <div className="stat-item">
+                <div className="stat">
                   <span>Total Value:</span>
-                  <strong>${stats.totalValue.toFixed(2)}</strong>
+                  <strong>${total.toFixed(2)}</strong>
                 </div>
-                <div className="stat-item">
-                  <span>Low Stock Items:</span>
-                  <strong className="low-stock-stat">
-                    {stats.lowStockCount}
-                  </strong>
-                </div>
-                <div className="stat-item">
-                  <span>Avg. Rating:</span>
+                <div className="stat">
+                  <span>Low Stock:</span>
                   <strong>
-                    {(
-                      products.reduce((sum, p) => sum + p.rating, 0) /
-                      products.length
-                    ).toFixed(1)}
-                    /5
+                    {products.filter((p) => p.quantity < 5).length}
                   </strong>
                 </div>
               </div>
             </div>
 
             <div className="content">
-              <div className="filter-section">
-                <div className="filter-header">
-                  <h3>Filter Products</h3>
-                  <div className="product-count">
-                    Showing {filteredProducts.length} of {products.length}{" "}
-                    products
-                  </div>
-                </div>
-                <div className="category-buttons">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      className={`category-btn ${
-                        selectedCategory === category ? "active" : ""
-                      }`}
-                      onClick={() => setSelectedCategory(category)}
-                    >
-                      {category === "All" ? "All Products" : category}
-                      {category !== "All" && (
-                        <span className="category-count">
-                          (
-                          {
-                            products.filter((p) => p.category === category)
-                              .length
-                          }
-                          )
-                        </span>
-                      )}
-                    </button>
-                  ))}
+              <div className="filter">
+                <h3>Products</h3>
+                <div className="categories">
+                  {["All", ...new Set(products.map((p) => p.category))].map(
+                    (category) => (
+                      <button
+                        key={category}
+                        className={`cat-btn ${
+                          selectedCategory === category ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        {category}
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -174,7 +125,7 @@ const App = () => {
                 onDelete={deleteProduct}
               />
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
